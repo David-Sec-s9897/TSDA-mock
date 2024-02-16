@@ -1,5 +1,6 @@
 package com.secdavid.base_template;
 
+import com.secdavid.base_template.exception.InvalidDateFormatException;
 import com.secdavid.base_template.model.TsDocument;
 import com.secdavid.base_template.services.TsDocumentService;
 import java.io.ByteArrayOutputStream;
@@ -8,6 +9,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.logging.Logger;
 import javax.xml.bind.JAXB;
 import javax.xml.datatype.DatatypeConfigurationException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,17 +35,22 @@ public class TsdaDataController {
   @ResponseStatus(HttpStatus.OK)
   @GetMapping(value = "id/{siloId}", produces = MediaType.APPLICATION_XML_VALUE)
   public String sayHello(@PathVariable("siloId") String siloId, @RequestParam("start") String start, @RequestParam("end") String end, @RequestParam("boundary") String boundary)
-      throws ParseException, DatatypeConfigurationException {
+          throws DatatypeConfigurationException {
+
     format.setTimeZone(TimeZone.getTimeZone("UTC"));
-    Date startDate = format.parse(start);
-    Date endDate = format.parse(end);
+    try {
+      Date startDate = format.parse(start);
+      Date endDate = format.parse(end);
 
-    TsDocument tsDocument1 = tsDocumentService.generateBasicDocumentTemplate(siloId)
-        .setIntervals(startDate, endDate).generateTimeSeries().build();
-    OutputStream outputStream = new ByteArrayOutputStream();
-    JAXB.marshal(tsDocument1, outputStream);
+      TsDocument tsDocument1 = tsDocumentService.generateBasicDocumentTemplate(siloId)
+              .setIntervals(startDate, endDate).generateTimeSeries().build();
+      OutputStream outputStream = new ByteArrayOutputStream();
+      JAXB.marshal(tsDocument1, outputStream);
 
-    return outputStream.toString();
+      return outputStream.toString();
+    } catch (ParseException e) {
+      throw new InvalidDateFormatException("Invalid start or end DateTime format.", e);
+    }
   }
 
 }
